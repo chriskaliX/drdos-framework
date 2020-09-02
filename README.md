@@ -55,3 +55,7 @@ It will be deleted once I achieve
 4. Improve response check
 5. Support more protocol
 6. Use sqlite to save data
+
+## New
+
+See, this work is kind of interestring. In fact, the most important part of this program is the vulnerable ip address. Once you get the ip address you just get them all. Since I've alreday done this work on my own, I may upload this one later...
