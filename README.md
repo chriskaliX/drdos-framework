@@ -1,6 +1,7 @@
 # Drdos Framework
 
 [README-EN](https://github.com/chriskaliX/drdos-framework/blob/master/README-EN.md)
+
 Drdos Framework是我学习反射型ddos的产出，我尝试将它设计为一个真正意义上的框架。这是它运行的图片。
 
 ![image](https://github.com/chriskaliX/drdos-framework/blob/master/imgs/demo.png)
@@ -27,7 +28,8 @@ Drdos框架是一个既可以用来校验IP是否存在drdos漏洞，又可以�
 
 ### 一些帮助
 
-`--type` 应该为 `dns`,`mem`,`ntp`,`snmp`,`ssdp`,`portmap`,`ldap` 中的一种
+1. `--type` 应该为 `dns`,`mem`,`ntp`,`snmp`,`ssdp`,`portmap`,`ldap` 中的一种
+2. 如果在阿里云上使用，记得在安全组上允许UDP，并把IP(即`-s`选项)设为`eth0`的网卡IP(而不是公网IP)
 
 ### 配置
 
@@ -66,4 +68,3 @@ const (
 4. Improve response check
 5. Support more protocol
 6. Use sqlite to save data
-
