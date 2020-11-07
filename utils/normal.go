@@ -1,10 +1,11 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
+	"net"
 	"os"
 	"reflect"
-	"errors"
 	"regexp"
 	"strconv"
 	"strings"
@@ -64,12 +65,37 @@ func IsContain(items []string, item string) bool {
 // 动态调用
 func Call(m map[string]interface{}, name string, params ...interface{}) ([]reflect.Value, error) {
 	f := reflect.ValueOf(m[name])
-    if len(params) != f.Type().NumIn() {
-        return nil, errors.New("the number of input params not match!")
-    }
-    in := make([]reflect.Value, len(params))
-    for k, v := range params {
-        in[k] = reflect.ValueOf(v)
-    }
-    return f.Call(in), nil
+	if len(params) != f.Type().NumIn() {
+		return nil, errors.New("the number of input params not match!")
+	}
+	in := make([]reflect.Value, len(params))
+	for k, v := range params {
+		in[k] = reflect.ValueOf(v)
+	}
+	return f.Call(in), nil
+}
+
+/*
+	Host函数，输入cidr返回iplist
+	有个问题，应该是通用问题，我都是把所有IP存到一个list里，即在内存中
+	所以太大了会出现溢出的问题，后期尝试类似python迭代器的方式实现吧
+*/
+func Hosts(cidr string) ([]string, error) {
+	inc := func(ip net.IP) {
+		for j := len(ip) - 1; j >= 0; j-- {
+			ip[j]++
+			if ip[j] > 0 {
+				break
+			}
+		}
+	}
+	ip, ipnet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return nil, err
+	}
+	var ips []string
+	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
+		ips = append(ips, ip.String())
+	}
+	return ips[1 : len(ips)-1], nil
 }

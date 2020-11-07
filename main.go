@@ -3,7 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
+	"net"
+	"strings"
 
 	"drdos/config"
 	"drdos/core"
@@ -40,6 +41,7 @@ func main() {
 		loadfile   string // IP列表
 		outputfile string // 输出的IP列表
 		timeout    uint   // 攻击时间超时
+		iprange    string // 手动输入的IP范围
 	)
 
 	flag.StringVar(&mode, "m", "", "c(check)|a(attack)|m(mix mode)")
@@ -51,6 +53,7 @@ func main() {
 	flag.StringVar(&loadfile, "f", "", "Vulnerable iplist path")
 	flag.StringVar(&outputfile, "o", "", "Output file path")
 	flag.UintVar(&timeout, "timeout", 120, "Attack time")
+	flag.StringVar(&iprange, "range", "", "IP range")
 	flag.Parse()
 
 	// 黑名单校验
@@ -58,24 +61,53 @@ func main() {
 		fmt.Println("[!] IP not allowed")
 		return
 	}
-	dir, _ := os.Getwd()
 	// 参数校验
 	// 设置mode
 	switch mode {
 	// 筛选IP模式
+
+	/*
+		2020-11-07
+		check模式应该支持手工输入的单个IP或者一个range
+	*/
 	case "c":
+		var iplist []string
+		var err error
 		fmt.Println("[+] Check Mode start")
-		// 输入文件校验
-		if loadfile == "" || outputfile == "" {
-			fmt.Println("[-] Input error!")
+		// 1. 判断是否指定输出文件
+		if outputfile == "" {
+			fmt.Println("[-] Please set outputfile")
 			usage()
 			return
 		}
 
-		fmt.Println("[+] Starting Loadfile from /data/loadfile/")
-		iplist, err := utils.FileLoads(dir + "/data/loadfile/" + loadfile)
-		if err != nil {
-			return
+		if iprange == "" {
+			if loadfile != "" {
+				fmt.Println("[+] Loadfile from " + loadfile)
+				iplist, err = utils.FileLoads(loadfile)
+				if err != nil {
+					return
+				}
+			} else {
+				fmt.Println("[-] Please set loadfile")
+				usage()
+				return
+			}
+		} else {
+			if strings.Contains(iprange, "/") {
+				iplist, err = utils.Hosts(iprange)
+				if err != nil {
+					fmt.Println("[-] wrong CIDR range!")
+					return
+				}
+			} else {
+				check := net.ParseIP(iprange)
+				if check == nil {
+					fmt.Println("[-] wrong IP address!")
+					return
+				}
+				iplist = []string{iprange}
+			}
 		}
 
 		_, err = core.Check(iplist, atktype, outputfile, interval, srcaddress)
@@ -95,8 +127,8 @@ func main() {
 			return
 		}
 		// [*] Attack模块内容
-		fmt.Println("[+] Starting Loadfile from /data/results/")
-		iplist, err := utils.FileLoads(dir + "/data/results/" + loadfile)
+		fmt.Println("[+] Loadfile from " + loadfile)
+		iplist, err := utils.FileLoads(loadfile)
 		if err != nil {
 			return
 		}
@@ -120,8 +152,8 @@ func main() {
 			return
 		}
 
-		fmt.Println("[+] Starting Loadfile from /data/loadfile/")
-		iplist, err := utils.FileLoads(dir + "/data/loadfile/" + loadfile)
+		fmt.Println("[+] Loadfile from " + loadfile)
+		iplist, err := utils.FileLoads(loadfile)
 		if err != nil {
 			return
 		}

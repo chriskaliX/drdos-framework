@@ -1,39 +1,52 @@
 # Drdos Framework
 
-Drdos Framework is my outcome of drdos working. I try to write this like a real framework.
+[README-EN](https://github.com/chriskaliX/drdos-framework/blob/master/README-EN.md)
+Drdos Framework是我学习反射型ddos的产出，我尝试将它设计为一个真正意义上的框架。这是它运行的图片。
 
-## Declaration
+![image](https://github.com/chriskaliX/drdos-framework/blob/master/imgs/demo.png)
 
-**This tool is for learning only. Not for illegal use.**
+## 郑重申明
 
-## Prepare
+**该框架仅用于学习，禁止用于其他任何非法用途**
 
-1. Linux server
-2. Golang env
+## 介绍
 
-## Usage
+Drdos框架是一个既可以用来校验IP是否存在drdos漏洞，又可以用来进行一些攻击测试的框架
+
+## 环境准备
+
+1. 一台在公网的Linux服务器
+2. Golang环境
+
+## 使用
 
 1. `go get github.com/google/gopacket`
-2. Just run `go run main.go --help`
+2. 运行`go run main.go --help`来查看帮助
 
-`[*] Attention : In check mode and mix mode, -f in /data/loadfile/, -o in /data/results/. But in attack mode, -f in /data/results/. You know, just for convenience`
+[*] 注意 : 在check和mix模式下，-o输出的文件在`/data/results/`目录下.
 
-### Some help
+### 一些帮助
 
-`--type` should be one of `dns`,`mem`,`ntp`,`snmp`,`ssdp`,`portmap`,`ldap`
-`-f` must in `/data/loadfile/`
-`-o` the outputfile is saved in `/data/results/`
+`--type` 应该为 `dns`,`mem`,`ntp`,`snmp`,`ssdp`,`portmap`,`ldap` 中的一种
 
-## Q&A
+### 配置
 
-Q: How much flow can this do?
-A: It depends on how many source ip you get, and the type of attack. Memcached nearly 200 times, ntp 10~15 times, ssdp 10 times, dns 5 times...
+默认的配置文件在 `config/config.go`，下面是默认的配置
 
-## Intruduction
+```go
+package config
 
-Drdos Framework can check the vulner of drdos iplist. Also it's got the attack mode to start drdos attack.
+const (
+	ListenPort     = 50000 // Check ip列表的时候的监听端口
+	Threshold      = 100   // 当包的大小大于阈值的时候，计数接受
+	WaitTime       = 10    // 全部发包完毕后，等待其余数据包的时间
+	Blacklists     = "/data/blacklists/blacklists"
+	MaxAtktime     = 300 // 最大攻击时间
+	AttackInterval = 0
+)
+```
 
-## Protocol Supported
+## 支持的协议
 
 |Port|Protocol|
 |:-:|:-:|
@@ -45,9 +58,7 @@ Drdos Framework can check the vulner of drdos iplist. Also it's got the attack m
 |1900|ssdp|
 |11211|memcache|
 
-## Update plan
-
-It will be deleted once I achieve
+## 更新计划
 
 1. HTTP API
 2. SHODAN | FOFA API
@@ -56,6 +67,3 @@ It will be deleted once I achieve
 5. Support more protocol
 6. Use sqlite to save data
 
-## New
-
-See, this work is kind of interestring. In fact, the most important part of this program is the vulnerable ip address. Once you get the ip address you just get them all. Since I've alreday done this work on my own, I may upload this one later...
