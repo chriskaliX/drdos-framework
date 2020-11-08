@@ -49,7 +49,7 @@ mix模式(觉得没有必要了，后期会逐步移除掉)
 
 ### 配置
 
-默认的配置文件在 `config/config.go`，下面是默认的配置
+默认的配置文件在 `config/config.go` ，下面是默认的配置
 
 ```go
 package config
@@ -61,6 +61,8 @@ const (
 	Blacklists     = "/data/blacklists/blacklists"
 	MaxAtktime     = 300 // 最大攻击时间
 	AttackInterval = 0
+	ShodanApi      = ""
+	ShodanPage     = 10 // 默认搜索页数，10页=1000个
 )
 ```
 
@@ -78,7 +80,7 @@ const (
 
 ## 更新计划
 
-1. HTTP API
+1. HTTP API(考虑用Gin，直接模板渲染做个简单的WEB - UI)
 2. ~~SHODAN~~| FOFA API
 3. ~~Blacklist of attack~~
 4. Improve response check

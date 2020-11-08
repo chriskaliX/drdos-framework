@@ -6,8 +6,6 @@ import (
 	"net"
 	"strings"
 
-	// "reflect"
-
 	"drdos/config"
 	"drdos/core"
 	"drdos/core/api"
