@@ -24,6 +24,22 @@ Drdos框架是一个既可以用来校验IP是否存在drdos漏洞，又可以�
 1. `go get github.com/google/gopacket`
 2. 运行`go run main.go --help`来查看帮助
 
+check模式
+
+```shell
+go run main.go -m c -s xx.xx.xx.xx -type dns -api -o test.txt # 使用api查询，需要在config.go中进行修改
+go run main.go -m c -s xx.xx.xx.xx -type dns -range xx.xx.xx.xx/24 -o test.txt # 扫描指定网段
+go run main.go -m c -s xx.xx.xx.xx -type dns -f input.txt -o test.txt # 从文件中获取IP地址
+```
+
+attack模式
+
+```shell
+go run main.go -m a -f xxx -type dns -t xx.xx.xx.xx -p xx  # 要注意如果攻击没有效果，可能是前面有NAT
+```
+
+mix模式(觉得没有必要了，后期会逐步移除掉)
+
 [*] 注意 : 在check和mix模式下，-o输出的文件在`/data/results/`目录下.
 
 ### 一些帮助
@@ -63,7 +79,7 @@ const (
 ## 更新计划
 
 1. HTTP API
-2. SHODAN | FOFA API
+2. ~~SHODAN~~| FOFA API
 3. ~~Blacklist of attack~~
 4. Improve response check
 5. Support more protocol

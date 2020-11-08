@@ -7,4 +7,6 @@ const (
 	Blacklists     = "/data/blacklists/blacklists"
 	MaxAtktime     = 300 // 最大攻击时间
 	AttackInterval = 0
+	ShodanApi      = ""
+	ShodanPage     = 10 // 默认搜索页数，10页=1000个
 )
