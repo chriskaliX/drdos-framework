@@ -6,7 +6,6 @@ import (
 	"drdos/utils"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"strconv"
@@ -16,8 +15,10 @@ import (
 // 修改一下，放大倍数统计应该是包的大小累加
 
 var (
-	ipch   chan map[string]int
-	checks map[string]interface{}
+	ipch      chan map[string]int
+	checks    map[string]interface{}
+	SendIndex = 0
+	RecvIndex = 0
 )
 
 func init() {
@@ -39,7 +40,7 @@ func Check(iplist []string, atktype string, outputfile string, interval uint, pu
 	result := make(map[string]int)
 	dir, _ := os.Getwd()
 
-	// 校验是否有公网IP
+	// 校验是否有公网IP，当没有公网IP的时候需要自己设定。但是如在阿里云等ECS上，是不能用公网IP的，需要设定为eth0的IP地址
 	if publicip == "" {
 		tempip, err := utils.PublicIP()
 		publicip = tempip
@@ -54,11 +55,13 @@ func Check(iplist []string, atktype string, outputfile string, interval uint, pu
 	// 开始监听
 	udpaddr, err := net.ResolveUDPAddr("udp4", "0.0.0.0:"+strconv.Itoa(config.ListenPort))
 	if err != nil {
-		log.Fatal("[!] Listen err: [%v]", err)
+		fmt.Println("[!] Listen err: [%v]", err)
+		return result, err
 	}
 	udpconn, err := net.ListenUDP("udp", udpaddr)
 	if err != nil {
-		log.Fatal("[!] Listen err: [%v]", err)
+		fmt.Println("[!] Listen err: [%v]", err)
+		return result, err
 	}
 
 	// 匿名函数生产
@@ -79,6 +82,7 @@ func Check(iplist []string, atktype string, outputfile string, interval uint, pu
 					} else {
 						if utils.IsContain(iplist, index) {
 							result[index] = value
+							RecvIndex = RecvIndex + 1 // 外部查看接收的进度
 							err := utils.FileWrites(dir+"/data/results/"+outputfile, index)
 							if err != nil {
 								return
@@ -96,9 +100,10 @@ func Check(iplist []string, atktype string, outputfile string, interval uint, pu
 		if _, ok := checks[atktype]; ok {
 			utils.Call(checks, atktype, ipaddr, publicip)
 			utils.ProcessBar(index+1, len(iplist))
+			SendIndex = index + 1 // 赋值给外部可以查看的，进度条
 		} else {
 			fmt.Println("[!] Atktype not found")
-			err := errors.New("[!] Atktype not found")
+			err := errors.New("Atktype not found")
 			return result, err
 		}
 	}

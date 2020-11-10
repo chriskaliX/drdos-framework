@@ -1,14 +1,17 @@
 package utils
 
 import (
+	// "crypto/rand"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // PathExists 判断路径是否存在
@@ -98,4 +101,34 @@ func Hosts(cidr string) ([]string, error) {
 		ips = append(ips, ip.String())
 	}
 	return ips[1 : len(ips)-1], nil
+}
+
+// 抄来的代码
+func RemoveRepeatedElement(arr []string) (newArr []string) {
+	newArr = make([]string, 0)
+	for i := 0; i < len(arr); i++ {
+		repeat := false
+		for j := i + 1; j < len(arr); j++ {
+			if arr[i] == arr[j] {
+				repeat = true
+				break
+			}
+		}
+		if !repeat {
+			newArr = append(newArr, arr[i])
+		}
+	}
+	return newArr
+}
+
+// 抄来的
+func RandomString(n int) string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
+	rand.Seed(time.Now().UnixNano())
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+
+	return string(b)
 }

@@ -9,4 +9,7 @@ const (
 	AttackInterval = 0
 	ShodanApi      = ""
 	ShodanPage     = 10 // 默认搜索页数，10页=1000个
+	ZoomeyeApi     = ""
+	ZoomeyePage    = 50    // 默认搜索页数，50页=1000个
+	HttpPort       = 65466 // Http默认监听端口
 )

