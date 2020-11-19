@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net"
@@ -12,20 +13,6 @@ import (
 	"drdos/plugins"
 	"drdos/utils"
 )
-
-var typemap map[string]int
-
-func init() {
-	typemap = map[string]int{
-		"ntp":       123,
-		"ssdp":      1900,
-		"memcached": 11211,
-		"snmp":      161,
-		"portmap":   111,
-		"dns":       53,
-		"cldap":     389,
-	}
-}
 
 func modeWarn() {
 	fmt.Println("[!] Mode must be set !")
@@ -87,6 +74,9 @@ func main() {
 	case "c":
 		var iplist []string
 		var err error
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		fmt.Println("[+] Check Mode start")
 		switch {
 		// 1. 判断是否指定输出文件（Required）
@@ -123,7 +113,7 @@ func main() {
 			case config.ShodanApi != "":
 				fmt.Println("[*] Shodan API Searching")
 				for page := 1; page <= config.ShodanPage; page++ {
-					tmplist, err := api.Shodan(typemap[atktype], uint(page))
+					tmplist, err := api.Shodan(utils.Typemap[atktype], uint(page))
 					if err != nil {
 						break
 					}
@@ -134,7 +124,7 @@ func main() {
 			case config.ZoomeyeApi != "":
 				fmt.Println("[*] Zoomeye API Searching")
 				for page := 1; page <= config.ZoomeyePage; page++ {
-					tmplist, err := api.Zoomeye(typemap[atktype], page)
+					tmplist, err := api.Zoomeye(utils.Typemap[atktype], page)
 					if err != nil {
 						break
 					}
@@ -149,7 +139,7 @@ func main() {
 			return
 		}
 
-		_, err = core.Check(iplist, atktype, outputfile, interval, srcaddress)
+		_, err = core.Check(iplist, atktype, outputfile, interval, srcaddress, ctx)
 		if err != nil {
 			fmt.Println("[-] Check FAILED !")
 		}
@@ -180,6 +170,9 @@ func main() {
 			fmt.Println("[-] Attack Error")
 			return
 		}
+	case "h":
+		fmt.Println("[*] HTTP Service Start...")
+		core.HttpMain()
 	default:
 		modeWarn()
 	}

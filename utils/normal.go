@@ -7,12 +7,27 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var Typemap map[string]int
+
+func init() {
+	Typemap = map[string]int{
+		"ntp":       123,
+		"ssdp":      1900,
+		"memcached": 11211,
+		"snmp":      161,
+		"portmap":   111,
+		"dns":       53,
+		"cldap":     389,
+	}
+}
 
 // PathExists 判断路径是否存在
 func PathExists(path string) (bool, error) {
@@ -131,4 +146,17 @@ func RandomString(n int) string {
 	}
 
 	return string(b)
+}
+
+func FileNameCheck(filename string) (string, error) {
+	var (
+		result string
+		err    error
+	)
+	result = filepath.Base(filename)
+	if result == "." || result == "\\" || result == "/" {
+		err = errors.New("filename error!")
+		return "", err
+	}
+	return result, nil
 }

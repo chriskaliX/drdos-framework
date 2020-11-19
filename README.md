@@ -2,9 +2,11 @@
 
 [README-EN](https://github.com/chriskaliX/drdos-framework/blob/master/README-EN.md)
 
-Drdos Framework是我学习反射型ddos的产出，我尝试将它设计为一个真正意义上的框架。这是它运行的图片。
+Drdos Framework是我学习反射型ddos的产出，我尝试将它设计为一个真正意义上的框架。这是它运行的图片。现已支持WEB模式（匆忙撰写，多多包含）
 
 ![image](https://github.com/chriskaliX/drdos-framework/blob/master/imgs/demo.png)
+
+![image](https://github.com/chriskaliX/drdos-framework/blob/master/imgs/web.png)
 
 ## 郑重申明
 
@@ -21,26 +23,26 @@ Drdos框架是一个既可以用来校验IP是否存在drdos漏洞，又可以�
 
 ## 使用
 
-1. `go get github.com/google/gopacket`
-2. 运行`go run main.go --help`来查看帮助
+- **命令模式**
 
-check模式 [稳定性较好，check百万级IP不会出错]
+    **check模式** [稳定性较好，check百万级IP不会出错]
 
-```shell
-go run main.go -m c -s xx.xx.xx.xx -type dns -api -o test.txt # 使用api查询，需要在config.go中进行修改
-go run main.go -m c -s xx.xx.xx.xx -type dns -range xx.xx.xx.xx/24 -o test.txt # 扫描指定网段
-go run main.go -m c -s xx.xx.xx.xx -type dns -f input.txt -o test.txt # 从文件中获取IP地址
-```
+    ```shell
+    go run main.go -m c -s xx.xx.xx.xx -type dns -api -o test.txt # 使用api查询，需要在config.go中进行修改
+    go run main.go -m c -s xx.xx.xx.xx -type dns -range xx.xx.xx.xx/24 -o test.txt # 扫描指定网段
+    go run main.go -m c -s xx.xx.xx.xx -type dns -f input.txt -o test.txt # 从文件中获取IP地址
+    ```
 
-attack模式
+    **attack模式**
 
-```shell
-go run main.go -m a -f xxx -type dns -t xx.xx.xx.xx -p xx  # 要注意如果攻击没有效果，可能是前面有NAT
-```
+    ```shell
+    go run main.go -m a -f xxx -type dns -t xx.xx.xx.xx -p xx  # 要注意如果攻击没有效果，可能是前面有NAT
+    ```
 
-mix模式(觉得没有必要了，后期会逐步移除掉)
+    [ * ] 注意 : 运行 `go run main.go --help` 来查看帮助
+- **WEB模式**
 
-[*] 注意 : 在check和mix模式下，-o输出的文件在`/data/results/`目录下.
+    `go run main.go -m h`运行带webUI的程序，登录的账号为`admin`，密码在控制台中出现，注意保存
 
 ### 一些帮助
 
@@ -63,6 +65,9 @@ const (
     AttackInterval = 0
     ShodanApi      = ""
     ShodanPage     = 10 // 默认搜索页数，10页=1000个
+    ZoomeyeApi     = ""
+    ZoomeyePage    = 20    // 默认搜索页数，20页=400个
+    HttpPort       = 65000 // Http默认监听端口
 )
 ```
 
@@ -80,9 +85,15 @@ const (
 
 ## 更新计划
 
-1. HTTP API(考虑用Gin，直接模板渲染做个简单的WEB - UI)
-2. ~~SHODAN~~| FOFA API
-3. ~~Blacklist of attack~~
-4. Improve response check
-5. Support more protocol
-6. Use sqlite to save data
+- [x] HTTP API
+  - [x] 文件上传以及展示接口
+- [ ] 搜索引擎API接口
+  - [x] Zoomeye
+  - [x] Shodan
+  - [ ] Fofa
+- [x] 攻击黑名单
+- [x] 使用Context包而不是sleep
+- [ ] 优化返回值check
+- [ ] 更多的协议支持
+  - [ ] OpenVPN
+- [ ] 使用sqlite来进行文件存储(这个我认为是功能点的问题，需要再思考一下)

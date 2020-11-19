@@ -4,9 +4,11 @@ Drdos Framework is my outcome of drdos working. I try to write this like a real 
 
 ![image](https://github.com/chriskaliX/drdos-framework/blob/master/imgs/demo.png)
 
+![image](https://github.com/chriskaliX/drdos-framework/blob/master/imgs/web.png)
+
 ## Declaration
 
-**This tool is for learning only. Not for illegal use.**
+This tool is for learning only. Not for illegal use.
 
 ## Intruduction
 
@@ -19,10 +21,26 @@ Drdos Framework can check the vulner of drdos iplist. Also it's got the attack m
 
 ## Usage
 
-1. `go get github.com/google/gopacket`
-2. Just run `go run main.go --help`
+- **Command**
 
-[*] Attention : In check mode and mix mode, -o in /data/results/.
+    **check Mode** [Good stability, won't fail even with millions of IP address]
+
+    ```shell
+    go run main.go -m c -s xx.xx.xx.xx -type dns -api -o test.txt # API Mode
+    go run main.go -m c -s xx.xx.xx.xx -type dns -range xx.xx.xx.xx/24 -o test.txt # CIDR
+    go run main.go -m c -s xx.xx.xx.xx -type dns -f input.txt -o test.txt # Extract from file
+    ```
+
+    **attack Mode**
+
+    ```shell
+    go run main.go -m a -f xxx -type dns -t xx.xx.xx.xx -p xx  # be care of the NAT
+    ```
+
+    [ * ] 注意 : 运行 `go run main.go --help` 来查看帮助
+- **WEB Mode**
+
+    `go run main.go -m h` `Username`: `admin`，`password` will be printed in the console.
 
 ### Some help
 
@@ -37,12 +55,17 @@ The configuration file is in `config/config.go`，and here is the default
 package config
 
 const (
-	ListenPort     = 50000 // Check ip列表的时候的监听端口
-	Threshold      = 100   // 当包的大小大于阈值的时候，计数接受
-	WaitTime       = 10    // 全部发包完毕后，等待其余数据包的时间
-	Blacklists     = "/data/blacklists/blacklists"
-	MaxAtktime     = 300 // 最大攻击时间
-	AttackInterval = 0
+    ListenPort     = 50000
+    Threshold      = 100
+    WaitTime       = 10
+    Blacklists     = "/data/blacklists/blacklists"
+    MaxAtktime     = 300
+    AttackInterval = 0
+    ShodanApi      = ""
+    ShodanPage     = 10
+    ZoomeyeApi     = ""
+    ZoomeyePage    = 20
+    HttpPort       = 65000
 )
 ```
 
@@ -67,13 +90,15 @@ A: It depends on how many source ip you get, and the type of attack. Memcached n
 
 It will be deleted once I achieve
 
-1. HTTP API
-2. SHODAN | FOFA API
-3. ~~Blacklist of attack~~
-4. Improve response check
-5. Support more protocol
-6. Use sqlite to save data
-
-## New
-
-See, this work is kind of interestring. In fact, the most important part of this program is the vulnerable ip address. Once you get the ip address you just get them all. Since I've alreday done this work on my own, I may upload this one later...
+- [x] HTTP API
+  - [x] File Upload and a good display
+- [ ] Search engine API
+  - [x] Zoomeye
+  - [x] Shodan
+  - [ ] Fofa
+- [x] Blacklist of attack
+- [x] Use Context to quit gently
+- [ ] check improvement
+- [ ] Protocol Support
+  - [ ] OpenVPN
+- [ ] Use sqlite to save
