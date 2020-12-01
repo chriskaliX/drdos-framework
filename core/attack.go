@@ -4,7 +4,6 @@ import (
 	"drdos/core/drdos"
 	"drdos/utils"
 	"errors"
-	"fmt"
 	"runtime"
 	"time"
 )
@@ -26,8 +25,8 @@ func init() {
 func Attack(iplist []string, srcip string, atktype string, port int, interval uint, timeout uint) error {
 	_, ok := attacks[atktype]
 	if !ok {
-		fmt.Println("[-] Atktype not found")
-		err := errors.New("[-] Atktype not found")
+		utils.ColorPrint("Atktype not supported", "warn")
+		err := errors.New("Atktype not found")
 		return err
 	}
 

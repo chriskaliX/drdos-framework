@@ -1,7 +1,6 @@
 package utils
 
 import (
-	// "crypto/rand"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -13,9 +12,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
+	log "github.com/sirupsen/logrus"
 )
 
-var Typemap map[string]int
+var (
+	Typemap map[string]int
+	Dir     string
+)
 
 func init() {
 	Typemap = map[string]int{
@@ -27,6 +32,7 @@ func init() {
 		"dns":       53,
 		"cldap":     389,
 	}
+	Dir, _ = os.Getwd()
 }
 
 // PathExists 判断路径是否存在
@@ -159,4 +165,40 @@ func FileNameCheck(filename string) (string, error) {
 		return "", err
 	}
 	return result, nil
+}
+
+func ColorPrint(input string, level string) {
+	yellow := color.New(color.FgYellow).SprintFunc()
+	red := color.New(color.FgRed).SprintFunc()
+	blue := color.New(color.FgBlue).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+
+	switch level {
+	case "info":
+		fmt.Printf("%s%s\n", blue("[*] "), input)
+		log.Info(input)
+	case "warn":
+		fmt.Printf("%s%s\n", yellow("[!] "), input)
+		log.Warn(input)
+	case "err":
+		fmt.Printf("%s%s\n", red("[-] "), input)
+		log.Error(input)
+	case "success":
+		fmt.Printf("%s%s\n", green("[+] "), input)
+		log.Info(input)
+	}
+}
+
+func IsExist(path string) bool {
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		if os.IsNotExist(err) {
+			return false
+		}
+		return false
+	}
+	return true
 }

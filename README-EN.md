@@ -45,7 +45,6 @@ Drdos Framework can check the vulner of drdos iplist. Also it's got the attack m
 ### Some help
 
 `--type` should be one of `dns`,`mem`,`ntp`,`snmp`,`ssdp`,`portmap`,`ldap`
-`-o` the outputfile is saved in `/data/results/`
 
 ### Configuration
 

@@ -6,9 +6,7 @@ import (
 	"drdos/core/drdos"
 	"drdos/utils"
 	"errors"
-	"fmt"
 	"net"
-	"os"
 	"strconv"
 	"time"
 )
@@ -39,40 +37,36 @@ func init() {
 func reset() {
 	SendIndex = 0
 	RecvIndex = 0
-	GlobalLock = 0
 }
 
-// Check drdos ip check
-
-func Check(iplist []string, atktype string, outputfile string, interval uint, publicip string, ctx context.Context) (map[string]int, error) {
+func Check(iplist []string, atktype string, interval uint, publicip string, ctx context.Context) (map[string]int, error) {
 	GlobalLock = 1
 	result := make(map[string]int)
-	dir, _ := os.Getwd()
-	defer reset()
+	reset()
 
 	// 校验是否有公网IP，当没有公网IP的时候需要自己设定。但是如在阿里云等ECS上，是不能用公网IP的，需要设定为eth0的IP地址
 	if publicip == "" {
 		tempip, err := utils.PublicIP()
 		publicip = tempip
 		if err != nil {
-			fmt.Println("[!] Public ipaddr not found!")
+			utils.ColorPrint("Public ip address not found", "warn")
 			return result, err
 		}
 	}
 
-	fmt.Println("[+] PublicIP is :", publicip)
-	fmt.Println("[+] Start Checking iplist")
+	utils.ColorPrint("PublicIP is : "+publicip, "info")
+	utils.ColorPrint("Start Checking iplist", "info")
 
 	// 开始监听
 	udpaddr, err := net.ResolveUDPAddr("udp4", "0.0.0.0:"+strconv.Itoa(config.ListenPort))
 	if err != nil {
-		fmt.Println("[!] Listen err: [%v]", err)
+		utils.ColorPrint("Listen err: "+err.Error(), "err")
 		return result, err
 	}
 	udpconn, err := net.ListenUDP("udp", udpaddr)
 	defer udpconn.Close()
 	if err != nil {
-		fmt.Println("[!] Listen err: [%v]", err)
+		utils.ColorPrint("Listen err: "+err.Error(), "err")
 		return result, err
 	}
 
@@ -89,6 +83,13 @@ func Check(iplist []string, atktype string, outputfile string, interval uint, pu
 	}(ctx)
 
 	// 匿名函数消费
+	/*
+		这里涉及到一个放大倍数统计的问题，其实统计起来是比较麻烦的，因为不清楚什么时候包会回来
+		最准确的方法是，所有IP的包发送完毕后，等待一定时长（1分钟），然后再把map循环插入表中，但是这样速度会下降很多
+		同时还需要统计发出包的大小，做个除法，这个留到后面做，目前放大倍率的mag字段为0
+
+		另外可能这一部分会有一点问题，例如最后sleep完了，但是insert还没结束
+	*/
 	go func(ctx context.Context) {
 		for {
 			select {
@@ -97,13 +98,16 @@ func Check(iplist []string, atktype string, outputfile string, interval uint, pu
 			case data := <-ipch:
 				for index, value := range data {
 					if _, ok := result[index]; ok {
+						// 重复的部分统计 收到包的总大小
 						result[index] = result[index] + value
 					} else {
+						// 非重复部分插入包
 						if utils.IsContain(iplist, index) {
 							result[index] = value
+							err := utils.Insert(index, utils.Typemap[atktype], 0, 1)
 							RecvIndex = RecvIndex + 1
-							err := utils.FileWrites(dir+"/data/results/"+outputfile, index)
 							if err != nil {
+								utils.ColorPrint("Insert error: "+err.Error(), "err")
 								return
 							}
 						}
@@ -125,7 +129,7 @@ func Check(iplist []string, atktype string, outputfile string, interval uint, pu
 				utils.ProcessBar(index+1, len(iplist))
 				SendIndex = index + 1
 			} else {
-				fmt.Println("[!] Atktype not found")
+				utils.ColorPrint("Atktype not supported", "warn")
 				err := errors.New("Atktype not found")
 				return result, err
 			}
@@ -134,8 +138,8 @@ func Check(iplist []string, atktype string, outputfile string, interval uint, pu
 	ctx1, _ := context.WithTimeout(ctx, config.WaitTime*time.Second)
 	// 等待，接收剩余包
 	wait(ctx1)
-	fmt.Println("[+] Finished, Total count : " + strconv.Itoa(len(result)))
-	fmt.Println("[+] Result path : " + dir + "/data/results/" + outputfile)
+	utils.ColorPrint("Finished. Total count : "+strconv.Itoa(len(result)), "success")
+	GlobalLock = 0
 	return result, nil
 }
 

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -17,14 +16,13 @@
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
 
 </head>
-
 <body id="page-top">
     <!-- Page Wrapper -->
     <div id="wrapper">
         <!-- Sidebar -->
         <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
             <!-- Sidebar - Brand -->
-            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="dashboard">
                 <div class="sidebar-brand-icon rotate-n-15">
                     <i class="fas fa-laugh-wink"></i>
                 </div>
@@ -120,7 +118,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="col-xl-4 col-lg-5">
                         <div class="row">
                             <div class="col-lg-12 mb-4">
@@ -128,36 +125,49 @@
                                     <div class="card-header py-3">
                                         <h6 class="m-0 font-weight-bold text-primary">Outfile</h6>
                                     </div>
-                                    <div id="outfile">
+                                        <div id="outfile">
                                     </div>
+                                    <form id= "downloadForm">  
+                                        <div class="card-body">
+                                            <div class="input-group">
+                                                <div class="text-lg font-weight-bold text-primary text-uppercase mb-1" style="position: relative;left:5px;top:5px;width:120px;">
+                                                    Type</div>
+                                                <input type="text" class="form-control bg-light border-3 small" aria-label="Search" aria-describedby="basic-addon2" style="position: relative;" id="type">                                        
+                                            </div>
+                                        </div>
+                                        </form>
+                                        <div class="card-body">
+                                            <div class="d-sm-flex align-items-center justify-content-sm-start mb-4">
+                                                <a href="#" class="btn btn-primary btn-icon-split" onclick="doDownload()">
+                                                <!-- <a window.location.href="api/dbquery?type"+'document.getElementById("type").value class="btn btn-primary btn-icon-split"></a> -->
+                                                    <span class="icon text-white-50">
+                                                        <i class="fas fa-flag"></i>
+                                                    </span>
+                                                    <span class="text">Download</span>
+                                                </a>
+                                            </div>
+                                        </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <!-- /.container-fluid -->
-
             </div>
             <!-- End of Main Content -->
         </div>
         <!-- End of Content Wrapper -->
-
     </div>
     <!-- End of Page Wrapper -->
-
     <!-- Bootstrap core JavaScript-->
     <script src="vendor/jquery/jquery.min.js"></script>
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-
     <!-- Core plugin JavaScript-->
     <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-
     <!-- Custom scripts for all pages-->
     <script src="js/sb-admin-2.min.js"></script>
-
     <!-- Page level plugins -->
     <script src="vendor/chart.js/Chart.min.js"></script>
-
     <!-- Page level custom scripts -->
     <script src="js/demo/chart-area-demo.js"></script>
     <script src="js/demo/chart-pie-demo.js"></script>
@@ -166,22 +176,8 @@
 
 <script type="text/javascript">
     $(function(){
-        outfiles();
         loadfiles();
     });
-
-    function outfiles() {
-        $.get("api/outfiles", '', function(res) {
-            var strs = new Array();
-            var htmlcode = new String();
-            if(res["code"] == 200) {
-                for (var i=0;i<res["msg"].length;i++) {
-                    htmlcode =htmlcode + "<div class=\"card-body\"><a class=\"m-0 font-weight-bold text-primary\" href=\"api/download/"+ res["msg"][i] +"?dir=outfile" + "\">" + res["msg"][i] + "</a></div>";
-                }
-                $("#outfile").html(htmlcode);
-            }
-        })
-    }
 
     function loadfiles() {
         $.get("api/loadfiles", '', function(res) {
@@ -196,7 +192,7 @@
         })
     }
 
-    function doUpload() {  
+    function doUpload() {
         var formData = new FormData($("#uploadForm")[0]);  
         $.ajax({  
             url: 'api/upload',  
@@ -216,6 +212,8 @@
             },   
         });  
     }
-
+    function doDownload() {
+        window.location.href = 'api/dbquery?type='+document.getElementById("type").value;
+    }
 </script>
 </html>

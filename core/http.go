@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -26,12 +25,7 @@ var (
 	flag       int
 	ctx        context.Context
 	cancel     context.CancelFunc
-	pwd        string
 )
-
-func init() {
-	pwd, _ = os.Getwd()
-}
 
 func HttpMain() {
 	router := gin.Default()
@@ -49,7 +43,7 @@ func HttpMain() {
 		API接口
 	*/
 	password := utils.RandomString(8)
-	fmt.Println("[*] Password : " + password)
+	utils.ColorPrint("Password : "+password, "info")
 	authorized := router.Group("/api", gin.BasicAuth(gin.Accounts{
 		"admin": password,
 	}))
@@ -60,11 +54,75 @@ func HttpMain() {
 	authorized.POST("/check", ipcheck)
 	authorized.GET("/cancel", cancelcheck)
 	authorized.GET("/loadfiles", loadsList)
-	authorized.GET("/outfiles", resultsList)
 	authorized.GET("/download/:filename", download)
 	authorized.POST("/upload", upload)
+	authorized.POST("/checkdb", checkdb)
+	authorized.GET("/dbquery", dbquery)
 
-	router.Run(":65000")
+	router.Run(":" + strconv.Itoa(config.HttpPort))
+}
+
+func dbquery(c *gin.Context) {
+	protocol := c.Query("type")
+	if port, ok := utils.Typemap[protocol]; ok {
+		ctx, cancel = context.WithCancel(context.Background())
+		iplists, err := utils.Query(port, 1, ctx)
+		if err != nil {
+			c.JSON(200, gin.H{"code": 400, "msg": "Query failed"})
+			return
+		}
+		if len(iplists) == 0 {
+			c.JSON(200, gin.H{"code": 400, "msg": "None ip found"})
+			return
+		}
+		c.Header("Content-Disposition", `attachment; filename=`+protocol+".txt")
+		c.Header("Content-Transfer-Encoding", "binary")
+		Data := []byte(strings.Join(iplists, "\n"))
+		c.Data(200, "application/octet-stream", Data)
+
+	} else {
+		c.JSON(200, gin.H{"code": 400, "msg": "Protocol not found"})
+	}
+}
+
+/*
+	这里存在的问题，如果Query的时间过长，
+*/
+func checkdb(c *gin.Context) {
+	var input checkBody
+	if GlobalLock == 1 {
+		c.JSON(200, gin.H{"code": 400, "msg": "A task is running"})
+		return
+	}
+	err := c.BindJSON(&input)
+	if err != nil {
+		c.JSON(200, gin.H{"code": 400, "msg": "Json parse error"})
+		return
+	}
+
+	ctx, cancel = context.WithCancel(context.Background())
+	GlobalLock = 1
+	go func(ctx context.Context) {
+		var iplists []string
+		tmp, err := utils.Query(utils.Typemap[input.Type], 1, ctx)
+		if err != nil {
+			return
+		}
+		iplists = append(iplists, tmp...)
+		tmp, err = utils.Query(utils.Typemap[input.Type], 0, ctx)
+		if err != nil {
+			return
+		}
+		iplists = append(iplists, tmp...)
+		totalcount = len(iplists)
+		GlobalLock = 0
+		_, err = Check(iplists, input.Type, uint(interval), input.Sip, ctx)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}(ctx)
+	c.JSON(200, gin.H{"code": 200, "msg": "Running"})
 }
 
 func dashboard(c *gin.Context) {
@@ -110,20 +168,7 @@ func status(c *gin.Context) {
 
 func loadsList(c *gin.Context) {
 	var result []string
-	fileInfoList, err := ioutil.ReadDir(pwd + "/data/loads/")
-	if err != nil {
-		c.JSON(200, gin.H{"code": 400, "msg": "File dir get failed"})
-		return
-	}
-	for i := range fileInfoList {
-		result = append(result, fileInfoList[i].Name())
-	}
-	c.JSON(200, gin.H{"code": 200, "msg": result})
-}
-
-func resultsList(c *gin.Context) {
-	var result []string
-	fileInfoList, err := ioutil.ReadDir(pwd + "/data/results/")
+	fileInfoList, err := ioutil.ReadDir(utils.Dir + "/data/loads/")
 	if err != nil {
 		c.JSON(200, gin.H{"code": 400, "msg": "File dir get failed"})
 		return
@@ -191,7 +236,7 @@ func apicheck(c *gin.Context) {
 	} else {
 		go func(ctx context.Context) {
 			totalcount = len(iplist)
-			_, err := Check(iplist, input.Type, input.Outfile, uint(interval), input.Sip, ctx)
+			_, err := Check(iplist, input.Type, uint(interval), input.Sip, ctx)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -204,7 +249,6 @@ type checkBody struct {
 	Sip      string `json:sip`
 	Dip      string `json:dip`
 	Type     string `json:type`
-	Outfile  string `json:outfile`
 	Loadfile string `json:loadfile`
 }
 
@@ -212,10 +256,8 @@ func download(c *gin.Context) {
 	dir := c.Query("dir")
 	name := c.Param("filename")
 	switch {
-	case dir == "outfile":
-		c.File(pwd + "/data/results/" + name)
 	case dir == "loadfile":
-		c.File(pwd + "/data/loads/" + name)
+		c.File(utils.Dir + "/data/loads/" + name)
 	default:
 		c.JSON(200, gin.H{"code": 400, "msg": "dir error"})
 	}
@@ -234,7 +276,7 @@ func upload(c *gin.Context) {
 		return
 	}
 	fmt.Println(path)
-	ok := c.SaveUploadedFile(file, pwd+"/data/loads/"+path)
+	ok := c.SaveUploadedFile(file, utils.Dir+"/data/loads/"+path)
 	if ok != nil {
 		c.JSON(200, gin.H{"code": 400, "msg": "file save error"})
 	}
@@ -265,12 +307,6 @@ func ipcheck(c *gin.Context) {
 		return
 	}
 
-	_, err = utils.FileNameCheck(input.Outfile)
-	if err != nil {
-		c.JSON(200, gin.H{"code": 400, "msg": "outfile error"})
-		return
-	}
-
 	switch {
 	case input.Loadfile != "":
 		path, err := utils.FileNameCheck(input.Loadfile)
@@ -278,7 +314,7 @@ func ipcheck(c *gin.Context) {
 			c.JSON(200, gin.H{"code": 400, "msg": "filename error"})
 			return
 		}
-		iplist, err = utils.FileLoads(pwd + "/data/loads/" + path)
+		iplist, err = utils.FileLoads(utils.Dir + "/data/loads/" + path)
 		if err != nil {
 			c.JSON(200, gin.H{"code": 400, "msg": "File not found"})
 			return
@@ -321,7 +357,7 @@ func ipcheck(c *gin.Context) {
 
 	go func(ctx context.Context) {
 		totalcount = len(iplist)
-		_, err := Check(iplist, input.Type, input.Outfile, uint(interval), input.Sip, ctx)
+		_, err := Check(iplist, input.Type, uint(interval), input.Sip, ctx)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -348,10 +384,6 @@ func basecheck(input checkBody) error {
 	}
 	if _, ok := utils.Typemap[input.Type]; !ok {
 		err = errors.New("type not found")
-		return err
-	}
-	if input.Outfile == "" {
-		err = errors.New("outfile not defined")
 		return err
 	}
 	return nil
